@@ -1,0 +1,21 @@
+<!doctype html><html lang="pt"><head>
+<meta charset="utf-8"><title>Proposta de Venda</title>
+<style>body{font-family:Arial,sans-serif;margin:40px;}h1{text-align:center;}label{display:block;margin:8px 0;font-weight:bold;}p{margin:2px 0;}</style>
+</head><body>
+  <h1>Proposta de Venda</h1>
+  <label>CLIENTE:</label><p>{{ v.nome }}</p>
+  <label>CPF:</label><p>{{ v.cpf }}</p>
+  <label>Telefone:</label><p>{{ v.telefone }}</p>
+  <label>ENDEREÇO:</label><p>{{ v.endereco }}</p>
+  <label>BAIRRO:</label><p>{{ v.bairro }}</p>
+  <label>CIDADE:</label><p>{{ v.cidade }}</p>
+  <label>CEP:</label><p>{{ v.cep }}</p>
+  <label>EMAIL:</label><p>{{ v.email }}</p>
+
+  <hr>
+
+  <label>VEÍCULO:</label><p>{{ m.modelo }}</p>
+  <label>CHASSI:</label><p>{{ m.chassi }}</p>
+  <label>VALOR DE VENDA:</label><p>R$ {{ '%.2f'|format(m.preco_venda) }}</p>
+  <label>CONDIÇÃO DE PAGAMENTO:</label><p>{{ v.condicao_pagamento }}</p>
+</body></html>

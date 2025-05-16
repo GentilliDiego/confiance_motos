@@ -1,0 +1,134 @@
+<!doctype html><html lang="pt"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ 'Editar' if editar else 'Nova' }} Moto – Confiance Motos</title>
+<style>
+ body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#000;color:#fff;}
+ h1{text-align:center;margin-bottom:20px;}
+ form{max-width:600px;margin:0 auto;}
+ label{display:block;margin-top:12px;}
+ input,select{width:100%;padding:8px;border-radius:4px;border:1px solid #444;background:#111;color:#fff;}
+ .btn{display:inline-block;margin-top:18px;padding:10px 18px;background:#555;color:#fff;border:none;border-radius:6px;text-decoration:none;cursor:pointer;}
+ .msg{color:#ff6666;text-align:center;margin-top:8px;}
+ .custo-row{display:flex;gap:8px;margin-top:8px;}
+ .custo-row input {flex:1;}
+ .remove-custo{background:#900;color:#fff;border:none;padding:0 8px;border-radius:4px;cursor:pointer;}
+ #add-custo {margin-top:12px;background:#080;}
+ #total-custo {margin-top:20px;font-weight:bold;}
+</style>
+</head><body>
+
+<div style="text-align:center;margin-bottom:10px;">
+  <a class="btn" href="{{ url_for('estoque') }}">Voltar</a>
+</div>
+
+<h1>{{ 'Editar Moto' if editar else 'Nova Moto' }}</h1>
+
+<form method="post">
+  <label>Modelo
+    <input type="text" name="modelo" value="{{ moto.modelo if editar else '' }}">
+  </label>
+
+  <label>Chassi
+    <input type="text" name="chassi" value="{{ moto.chassi if editar else '' }}">
+  </label>
+
+  <label>Placa
+    <input type="text" name="placa" value="{{ moto.placa if editar else '' }}">
+  </label>
+
+  <label>Cor
+    <input type="text" name="cor" value="{{ moto.cor if editar else '' }}">
+  </label>
+
+  <label>Ano/Modelo
+    <input type="text" name="ano" value="{{ moto.ano if editar else '' }}">
+  </label>
+
+  <label>Origem
+    <select name="origem">
+      {% set o=moto.origem if editar else '' %}
+      <option value="Propria"    {{ 'selected' if o=='Propria'    else '' }}>Própria</option>
+      <option value="Consignada" {{ 'selected' if o=='Consignada' else '' }}>Consignada</option>
+      <option value="Fornecedor" {{ 'selected' if o=='Fornecedor' else '' }}>Fornecedor</option>
+    </select>
+  </label>
+
+  <label>Preço de aquisição
+    <input id="preco-aq" type="number" step="0.01" name="preco_aquisicao"
+           value="{{ moto.preco_aquisicao if editar else '' }}">
+  </label>
+
+  <label>Preço de venda
+    <input type="number" step="0.01" name="preco_venda"
+           value="{{ moto.preco_venda if editar else '' }}">
+  </label>
+
+  <label>Custos adicionais:</label>
+  <div id="custos-container">
+    {% for c in custos %}
+    <div class="custo-row">
+      <input name="custo_valor" type="number" step="0.01" placeholder="Valor" value="{{ c.valor }}">
+      <input name="custo_desc"  type="text" placeholder="Descrição" value="{{ c.descricao }}">
+      <button type="button" class="remove-custo">–</button>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" id="add-custo" class="btn">+ Adicionar custo</button>
+
+  <p id="total-custo">Custo total de aquisição: R$ <span>0.00</span></p>
+
+  <button class="btn" type="submit">Salvar</button>
+  <a class="btn" style="background:#777;" href="{{ url_for('estoque') }}">Cancelar</a>
+
+  {% if erro %}<p class="msg">{{ erro }}</p>{% endif %}
+</form>
+
+<script>
+const container   = document.getElementById('custos-container'),
+      addBtn      = document.getElementById('add-custo'),
+      totalSpan   = document.querySelector('#total-custo span'),
+      precoInput  = document.getElementById('preco-aq');
+
+function atualizarTotal() {
+  // valor base
+  const base = parseFloat(precoInput.value) || 0;
+  // soma dos custos extras
+  const somaCustos = Array.from(
+    container.querySelectorAll('input[name="custo_valor"]')
+  )
+    .map(i=>parseFloat(i.value)||0)
+    .reduce((a,b)=>a+b, 0);
+  const total = base + somaCustos;
+  totalSpan.textContent = total.toFixed(2);
+}
+
+function attachRowHandlers(row) {
+  row.querySelector('.remove-custo')
+     .onclick = ()=>{ row.remove(); atualizarTotal(); };
+  row.querySelector('input[name="custo_valor"]')
+     .addEventListener('input', atualizarTotal);
+}
+
+addBtn.onclick = ()=>{
+  const row = document.createElement('div');
+  row.className = 'custo-row';
+  row.innerHTML = `
+    <input name="custo_valor" type="number" step="0.01" placeholder="Valor">
+    <input name="custo_desc"  type="text" placeholder="Descrição">
+    <button type="button" class="remove-custo">–</button>
+  `;
+  container.appendChild(row);
+  attachRowHandlers(row);
+  atualizarTotal();
+};
+
+// sempre que o preço de aquisição mudar
+precoInput.addEventListener('input', atualizarTotal);
+
+// inicializa handlers existentes
+document.querySelectorAll('.custo-row').forEach(attachRowHandlers);
+// calcula total ao carregar
+atualizarTotal();
+</script>
+
+</body></html>

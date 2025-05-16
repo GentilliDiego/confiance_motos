@@ -1,0 +1,44 @@
+<!doctype html><html lang="pt">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Estoque – {{ titulo }}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#000;color:#fff;}
+    header{text-align:center;margin-bottom:20px;}
+    .actions{text-align:center;margin-bottom:15px;}
+    .btn{display:inline-block;min-width:120px;margin:4px;padding:10px 16px;background:#555;color:#fff;border:none;border-radius:6px;cursor:pointer;text-decoration:none;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;}
+    th,td{border:1px solid #444;padding:8px;text-align:center;}
+    tr:hover{background:#111;}
+  </style>
+</head><body>
+  <header><h1>Motos – {{ titulo }}</h1></header>
+
+  <div class="actions">
+    <a class="btn" href="{{ url_for('estoque') }}">← Voltar ao Estoque</a>
+  </div>
+
+  {% if motos %}
+  <table>
+    <thead><tr>
+      <th>ID</th><th>Modelo</th><th>Chassi</th><th>Placa</th>
+      <th>Ano</th><th>Cor</th><th>Preço venda</th>
+    </tr></thead>
+    <tbody>
+      {% for m in motos %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td>{{ m.modelo or '—' }}</td>
+        <td>{{ m.chassi or '—' }}</td>
+        <td>{{ m.placa or '—' }}</td>
+        <td>{{ m.ano or '—' }}</td>
+        <td>{{ m.cor or '—' }}</td>
+        <td>{{ '%.2f'|format(m.preco_venda) if m.preco_venda else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="text-align:center;">Nenhuma moto de origem “{{ titulo }}” encontrada.</p>
+  {% endif %}
+</body></html>

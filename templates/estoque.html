@@ -1,0 +1,92 @@
+<!doctype html><html lang="pt">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Estoque – Confiance Motos</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#000;color:#fff;}
+    header{text-align:center;margin-bottom:20px;}
+    .dash{display:flex;gap:16px;justify-content:center;margin-bottom:20px;}
+    .card{background:#111;padding:16px;border-radius:6px;text-align:center;min-width:140px;cursor:pointer;}
+    .card h2{margin:0 0 8px;font-size:1rem;color:#aaa;}
+    .card div{font-size:1.6rem;font-weight:bold;}
+    .actions{text-align:center;margin-bottom:15px;}
+    .btn{display:inline-block;min-width:120px;margin:4px;padding:10px 16px;background:#555;color:#fff;border:none;border-radius:6px;cursor:pointer;text-decoration:none;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;}
+    th,td{border:1px solid #444;padding:8px;text-align:center;}
+    tr:hover{background:#111;}
+  </style>
+</head><body>
+  <header><h1>Gestão de Estoque</h1></header>
+
+  <!-- DASHBOARD CLICÁVEL -->
+  <div class="dash">
+    <div class="card" onclick="location.href='{{ url_for('estoque') }}'">
+      <h2>Total em estoque</h2>
+      <div>{{ total }}</div>
+    </div>
+    <div class="card" onclick="location.href='{{ url_for('estoque_por_origem', origem='consignadas') }}'">
+      <h2>Consignadas</h2>
+      <div>{{ consignada }}</div>
+    </div>
+    <div class="card" onclick="location.href='{{ url_for('estoque_por_origem', origem='proprias') }}'">
+      <h2>Próprias</h2>
+      <div>{{ propria }}</div>
+    </div>
+    <div class="card" onclick="location.href='{{ url_for('estoque_por_origem', origem='fornecedor') }}'">
+      <h2>Fornecedor</h2>
+      <div>{{ fornecedor }}</div>
+    </div>
+  </div>
+
+  <!-- AÇÕES -->
+  <div class="actions">
+    <a class="btn" href="{{ url_for('index') }}">Voltar</a>
+    <a class="btn" href="{{ url_for('estoque_form') }}">+ Cadastrar novo</a>
+    <button id="btnEdit" class="btn" disabled>Editar</button>
+    <button id="btnDel"  class="btn" disabled>Excluir</button>
+  </div>
+
+  {% if motos %}
+  <form id="formTable"><table>
+    <thead><tr>
+      <th></th><th>ID</th><th>Modelo</th><th>Chassi</th>
+      <th>Placa</th><th>Ano</th><th>Cor</th><th>Preço venda</th>
+    </tr></thead>
+    <tbody>
+      {% for m in motos %}
+      <tr>
+        <td><input type="radio" name="moto_id" value="{{ m.id }}"></td>
+        <td>{{ m.id }}</td>
+        <td>{{ m.modelo or '—' }}</td>
+        <td>{{ m.chassi or '—' }}</td>
+        <td>{{ m.placa or '—' }}</td>
+        <td>{{ m.ano or '—' }}</td>
+        <td>{{ m.cor or '—' }}</td>
+        <td>{{ '%.2f'|format(m.preco_venda) if m.preco_venda else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></form>
+  {% else %}
+    <p style="text-align:center;">Nenhuma moto cadastrada.</p>
+  {% endif %}
+
+  <script>
+    const f=document.getElementById('formTable'),
+          e=document.getElementById('btnEdit'),
+          d=document.getElementById('btnDel');
+    if(f){
+      f.addEventListener('change',()=>{
+        const sel=f.querySelector('input[name="moto_id"]:checked'),
+              ok=!!sel;
+        e.disabled=d.disabled=!ok;
+        if(ok){
+          const id=sel.value;
+          e.onclick=()=>location.href=`/estoque/editar/${id}`;
+          d.onclick=()=>{ if(confirm('Excluir moto?')) fetch(`/estoque/excluir/${id}`,{method:'POST'}).then(()=>location.reload()) };
+        }
+      });
+    }
+  </script>
+</body></html>

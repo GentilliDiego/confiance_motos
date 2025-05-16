@@ -1,0 +1,15 @@
+<!doctype html><html lang="pt"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confiance Motos – Gestão</title>
+<style>
+ body{font-family:Arial,sans-serif;margin:0;padding:60px 20px;background:#000;color:#fff;text-align:center;}
+ img{width:180px;margin-bottom:40px;}
+ .btn{display:block;width:220px;margin:12px auto;padding:14px;background:#555;color:#fff;border:none;border-radius:6px;text-decoration:none;}
+</style>
+</head><body>
+  <img src="{{ url_for('static',filename='images/logo.png') }}" alt="logo">
+  <a class="btn" href="{{ url_for('vendas_home') }}">Vendas</a> 
+  <a class="btn" href="{{ url_for('estoque') }}">Estoque</a>
+  <a class="btn" href="{{ url_for('financeiro') }}">Financeiro</a>
+
+</body></html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Custos Mensais – {{ ano }}/{{ "%02d"|format(mes) }}</title>
+  <style>
+    body{background:#000;color:#fff;font-family:Arial,padding:20px;}
+    h1{margin-bottom:20px;}
+    a{color:#0af;text-decoration:none;}
+    .line{display:flex;gap:8px;margin-bottom:8px;}
+    .line input{flex:1;padding:6px;border-radius:4px;border:1px solid #444;background:#111;color:#fff;}
+    .line .rem{background:#900;border:none;color:#fff;padding:0 8px;border-radius:4px;cursor:pointer;}
+    button{padding:8px 12px;background:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;}
+  </style>
+</head>
+<body>
+  <h1>Custos Mensais — {{ ano }}/{{ "%02d"|format(mes) }}</h1>
+  <p><a href="{{ url_for('financeiro') }}">← Voltar ao Financeiro</a></p>
+
+  <form action="{{ url_for('financeiro_gravar_custos') }}" method="post">
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <input type="hidden" name="mes" value="{{ mes }}">
+    <div id="custosContainer">
+      {% for c in custos %}
+      <div class="line">
+        <input name="custo_valor" value="{{ c.valor }}" placeholder="Valor">
+        <input name="custo_desc"  value="{{ c.descricao }}" placeholder="Descrição">
+        <button type="button" class="rem">–</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" id="addCusto">+ Adicionar custo</button>
+    <button type="submit">Salvar Custos</button>
+  </form>
+
+  <script>
+    document.querySelectorAll('.rem').forEach(b=>b.onclick=()=>b.parentNode.remove());
+    document.getElementById('addCusto').onclick=()=>{
+      const cont = document.getElementById('custosContainer'),
+            div  = document.createElement('div'); div.className='line';
+      div.innerHTML=`
+        <input name="custo_valor" placeholder="Valor">
+        <input name="custo_desc"  placeholder="Descrição">
+        <button type="button" class="rem">–</button>`;
+      cont.appendChild(div);
+      div.querySelector('.rem').onclick = ()=>div.remove();
+    };
+  </script>
+</body>
+</html>

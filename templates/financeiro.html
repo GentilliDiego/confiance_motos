@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Financeiro – Confiance Motos</title>
+  <style>
+    body{background:#000;color:#fff;font-family:Arial,sans-serif;margin:0;padding:20px;}
+    header{display:flex;justify-content:space-between;align-items:center;}
+    select,button{padding:6px 8px;background:#111;color:#fff;border:1px solid #444;border-radius:4px;cursor:pointer;}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0;}
+    .card,a.card{background:#111;padding:16px;border-radius:6px;text-align:center;color:#fff;text-decoration:none;}
+    .card h2{margin:0 0 8px;}
+    table{width:100%;border-collapse:collapse;margin-top:20px;}
+    th,td{border:1px solid #444;padding:8px;text-align:center;}
+  </style>
+</head>
+<body>
+  <header>
+    <button onclick="location.href='/'" style="background:#555;color:#fff;border:none;padding:6px 12px;border-radius:4px;">← Home</button>
+    <h1 style="margin:0 auto;">Financeiro</h1>
+    <div style="visibility:hidden;">X</div>
+  </header>
+
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+    <select id="selAno"></select>
+    <select id="selMes"></select>
+    <button id="btnCarregar">Carregar</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h2>Total Vendas</h2><div id="tv">0.00</div></div>
+    <div class="card"><h2>Custo Total</h2><div id="ct">0.00</div></div>
+    <div class="card"><h2>Lucro Bruto</h2><div id="lb">0.00</div></div>
+
+    <a href="{{ url_for('financeiro_custos_page', ano=ano_atual, mes=mes_atual) }}" class="card">
+      <h2>Custos Mensais</h2><div id="cm">0.00</div>
+    </a>
+
+    <div class="card"><h2>Comissão Vendedor</h2><div id="com">0.00</div></div>
+    <div class="card"><h2>Lucro Líquido</h2><div id="ll">0.00</div></div>
+  </div>
+
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Veículo</th>
+        <th>Venda</th>
+        <th>Total Despesas</th>
+        <th>Custo Total</th>
+        <th>Lucro</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const anos = {{ anos|tojson }}, anoA = {{ ano_atual }}, mesA = {{ mes_atual }};
+    const selAno = document.getElementById('selAno'),
+          selMes = document.getElementById('selMes');
+
+    anos.forEach(a => {
+      const o = new Option(a, a);
+      if (a === anoA) o.selected = true;
+      selAno.add(o);
+    });
+    for (let m = 1; m <= 12; m++) {
+      const o = new Option(m, m);
+      if (m === mesA) o.selected = true;
+      selMes.add(o);
+    }
+
+    document.getElementById('btnCarregar').onclick = carrega;
+    window.addEventListener('DOMContentLoaded', carrega);
+
+    function carrega() {
+      fetch(`/financeiro/${selAno.value}/${selMes.value}`)
+        .then(r => r.json())
+        .then(d => {
+          fill('tv', d.total_vendas);
+          fill('ct', d.custo_total);
+          fill('lb', d.lucro_bruto);
+          fill('cm', d.custos_mensais);
+          fill('com', d.comissao);
+          fill('ll', d.lucro_liquido);
+
+          const tbody = document.querySelector('#tbl tbody');
+          tbody.innerHTML = '';
+
+          d.detalhes_vendas.forEach(v => {
+            const despesas = (d.custos_venda[v.id] || [])
+                                .reduce((s, c) => s + c.valor, 0);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>
+                <a href="/vendas/${v.id}/custos"
+                   style="color:#0af;text-decoration:underline;">
+                  ${v.nome}
+                </a>
+              </td>
+              <td>${v.modelo}</td>
+              <td>${v.preco_venda.toFixed(2)}</td>
+              <td>${despesas.toFixed(2)}</td>
+              <td>${v.custo_total.toFixed(2)}</td>
+              <td>${(v.preco_venda - v.custo_total).toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    function fill(id, v) {
+      document.getElementById(id).textContent = Number(v).toFixed(2);
+    }
+  </script>
+</body>
+</html>

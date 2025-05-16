@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vendas – Confiance Motos</title>
+  <style>
+    body{
+      font-family:Arial,sans-serif;
+      margin:0;
+      padding:20px;
+      background:#000;
+      color:#fff;
+    }
+    header{
+      text-align:center;
+      margin-bottom:20px;
+    }
+    .actions{
+      text-align:center;
+      margin-bottom:15px;
+    }
+    .btn{
+      display:inline-block;
+      min-width:120px;
+      margin:4px;
+      padding:10px 16px;
+      background:#555;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn:disabled{
+      opacity:.4;
+      cursor:not-allowed;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+    }
+    th,td{
+      border:1px solid #444;
+      padding:8px;
+      text-align:center;
+    }
+    tr:hover{
+      background:#111;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Vendas</h1></header>
+
+  <div class="actions">
+    <a class="btn" href="{{ url_for('index') }}">Voltar</a>
+    <a class="btn" href="{{ url_for('leads') }}">Leads</a>
+    <a class="btn" href="{{ url_for('vendas_novo') }}">+ Cadastrar nova venda</a>
+    <button id="btnEdit" class="btn" disabled>Editar</button>
+    <button id="btnDel"  class="btn" disabled>Excluir</button>
+  </div>
+
+  {% if vendas %}
+  <form id="formV">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Veículo</th>
+          <th>Cidade</th>
+          <th>Telefone</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td><input type="radio" name="venda_id" value="{{ v.id }}"></td>
+          <td>{{ v.data_venda }}</td>
+          <td>{{ v.nome }}</td>
+          <td>{{ v.modelo or '—' }}</td>
+          <td>{{ v.cidade or '—' }}</td>
+          <td>{{ v.telefone or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+    <p style="text-align:center;">Nenhuma venda registrada.</p>
+  {% endif %}
+
+  <script>
+    const form   = document.getElementById('formV'),
+          btnEdi = document.getElementById('btnEdit'),
+          btnDel = document.getElementById('btnDel');
+
+    if (form){
+      form.addEventListener('change', () => {
+        const sel = form.querySelector('input[name="venda_id"]:checked'),
+              ok  = !!sel;
+        btnEdi.disabled = btnDel.disabled = !ok;
+        if (ok){
+          const id = sel.value;
+          btnEdi.onclick = () => location.href = `/vendas/editar/${id}`;
+          btnDel.onclick = () => {
+            if (confirm('Excluir venda?')){
+              fetch(`/vendas/excluir/${id}`, {method:'POST'})
+                .then(() => location.reload());
+            }
+          };
+        }
+      });
+    }
+  </script>
+</body>
+</html>

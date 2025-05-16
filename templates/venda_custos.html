@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Despesas – Venda {{ venda.id }}</title>
+  <style>
+    body{background:#000;color:#fff;font-family:Arial,sans-serif;margin:20px;}
+    h1{text-align:center;margin-bottom:20px;}
+    .actions{text-align:center;margin-bottom:20px;}
+    form{display:flex;justify-content:center;gap:8px;}
+    input{padding:6px;border-radius:4px;border:1px solid #444;background:#111;color:#fff;width:200px;}
+    button{padding:6px 12px;border:none;border-radius:4px;background:#555;color:#fff;cursor:pointer;}
+    table{width:100%;max-width:800px;margin:20px auto;border-collapse:collapse;}
+    th,td{border:1px solid #444;padding:8px;text-align:center;}
+    .del{background:#900;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:2px 6px;}
+  </style>
+</head>
+<body>
+  <h1>Despesas da Venda #{{ venda.id }} – {{ venda.nome }}</h1>
+  <div class="actions">
+    <a href="{{ url_for('financeiro') }}" style="color:#0af;text-decoration:none;">← Voltar ao Financeiro</a>
+  </div>
+
+  <!-- ADICIONAR DESPESA -->
+  <form method="post">
+    <input name="descricao" placeholder="Descrição" required>
+    <input name="valor" type="number" step="0.01" placeholder="Valor (R$)" required>
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <!-- LISTA DE DESPESAS -->
+  <table>
+    <thead>
+      <tr><th>Descrição</th><th>Valor (R$)</th><th>Ação</th></tr>
+    </thead>
+    <tbody>
+      {% for c in custos %}
+      <tr>
+        <td>{{ c.descricao }}</td>
+        <td>{{ '%.2f'|format(c.valor) }}</td>
+        <td>
+          <form method="post"
+                action="{{ url_for('venda_custos_excluir', vid=venda.id, cid=c.id) }}"
+                style="display:inline;">
+            <button type="submit" class="del">×</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" style="text-align:center;">Nenhuma despesa lançada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

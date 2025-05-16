@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Leads – Confiance Motos</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#000;color:#fff;}
+    header{text-align:center;margin-bottom:20px;}
+    .actions{text-align:center;margin-bottom:15px;}
+    .btn{display:inline-block;min-width:120px;margin:4px;padding:10px 16px;
+         background:#555;color:#fff;border:none;border-radius:6px;
+         cursor:pointer;text-decoration:none;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;}
+    th,td{border:1px solid #444;padding:8px;text-align:center;}
+    tr:hover{background:#111;}
+  </style>
+</head>
+<body>
+  <header><h1>Leads</h1></header>
+
+  <div class="actions">
+    <a class="btn" href="{{ url_for('vendas_home') }}">Voltar</a>
+    <a class="btn" href="{{ url_for('leads_form') }}">+ Cadastrar novo</a>
+    <button id="btnEdit" class="btn" disabled>Editar</button>
+    <button id="btnDel"  class="btn" disabled>Excluir</button>
+    <button id="btnVenda" class="btn" disabled>Gerar venda</button>
+  </div>
+
+  {% if leads %}
+  <form id="formTab">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Data</th>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>CPF</th>
+          <th>Data de Nasc.</th>
+          <th>Temperatura</th>
+          <th>Produto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in leads %}
+        <tr>
+          <td><input type="radio" name="lead_id" value="{{ l.id }}"></td>
+          <!-- Data de criação do lead -->
+          <td>{{ l.created_at[:10] }}</td>
+          <td>{{ l.nome }}</td>
+          <td>{{ l.telefone or '—' }}</td>
+          <!-- CPF -->
+          <td>{{ l.cpf or '—' }}</td>
+          <!-- Data de nascimento formatada DD/MM/YYYY -->
+          <td>
+            {% if l.data_nasc %}
+              {{ l.data_nasc[8:10] }}/{{ l.data_nasc[5:7] }}/{{ l.data_nasc[0:4] }}
+            {% else %}
+              — 
+            {% endif %}
+          </td>
+          <td>{{ l.temperatura }}</td>
+          <td>{{ l.modelo or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+    <p style="text-align:center;">Nenhum lead cadastrado.</p>
+  {% endif %}
+
+  <script>
+    const f = document.getElementById('formTab'),
+          e = document.getElementById('btnEdit'),
+          d = document.getElementById('btnDel'),
+          v = document.getElementById('btnVenda');
+    if (f) {
+      f.addEventListener('change', () => {
+        const sel = f.querySelector('input[name="lead_id"]:checked'),
+              ok  = !!sel;
+        e.disabled = d.disabled = v.disabled = !ok;
+        if (ok) {
+          const id = sel.value;
+          e.onclick    = () => location.href = `/vendas/leads/editar/${id}`;
+          d.onclick    = () => {
+                            if (confirm('Excluir lead?')) {
+                              fetch(`/vendas/leads/excluir/${id}`, { method:'POST' })
+                                .then(() => location.reload());
+                            }
+                          };
+          v.onclick    = () => location.href = `/vendas/leads/gerar_venda/${id}`;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

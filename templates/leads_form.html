@@ -1,0 +1,70 @@
+<!doctype html><html lang="pt"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ 'Editar' if edit else 'Novo' }} Lead – Confiance Motos</title>
+<style>
+ body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#000;color:#fff;}
+ h1{text-align:center;margin-bottom:20px;}
+ form{max-width:480px;margin:0 auto;}
+ label{display:block;margin-top:12px;}
+ input,select,textarea{width:100%;padding:8px;border-radius:4px;border:1px solid #444;background:#111;color:#fff;}
+ textarea{height:100px;resize:vertical;}
+ .btn{display:inline-block;margin-top:18px;padding:10px 18px;background:#555;color:#fff;border:none;borderradius:6px;text-decoration:none;cursor:pointer;}
+ .msg{color:#ff6666;margin-top:10px;text-align:center;}
+ .top{text-align:center;margin-bottom:10px;}
+</style>
+</head><body>
+
+<div class="top">
+  <a class="btn" href="{{ url_for('leads') }}">Voltar</a>
+</div>
+
+<h1>{{ 'Editar Lead' if edit else 'Novo Lead' }}</h1>
+
+<form method="post">
+  <label>Nome
+    <input type="text" name="nome" value="{{ lead.nome if edit else '' }}" required>
+  </label>
+
+  <label>Telefone
+    <input type="text" name="telefone" value="{{ lead.telefone if edit else '' }}">
+  </label>
+
+  <label>CPF
+    <input type="text" name="cpf" value="{{ lead.cpf if edit else '' }}">
+  </label>
+
+  <label>Data de nascimento
+    <input type="date" name="data_nasc" value="{{ lead.data_nasc if edit else '' }}">
+  </label>
+
+  <label>Produto (estoque)
+    <select name="produto_id">
+      <option value="">— Selecione —</option>
+      {% for m in motos %}
+      <option value="{{ m['id'] }}"
+        {% if edit and lead.produto_id==m['id'] %}selected{% endif %}>
+        {{ m['label'] }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Temperatura
+    {% set t = lead.temperatura if edit else '' %}
+    <select name="temperatura">
+      <option value="Frio"  {{ 'selected' if t=='Frio'  else '' }}>Frio</option>
+      <option value="Morno" {{ 'selected' if t=='Morno' else '' }}>Morno</option>
+      <option value="Quente"{{ 'selected' if t=='Quente' else '' }}>Quente</option>
+    </select>
+  </label>
+
+  <label>Observações
+    <textarea name="observacoes">{{ lead.observacoes if edit else '' }}</textarea>
+  </label>
+
+  <button class="btn" type="submit">Salvar</button>
+  <a class="btn" style="background:#777;" href="{{ url_for('leads') }}">Cancelar</a>
+
+  {% if erro %}<p class="msg">{{ erro }}</p>{% endif %}
+</form>
+</body></html>
