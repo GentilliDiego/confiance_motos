@@ -9,7 +9,6 @@ DB = Path(__file__).with_name("estoque.db")
 # ───────────── BANCO ─────────────
 def init_db():
     with sqlite3.connect(DB) as c:
-        # motos
         c.execute("""
             CREATE TABLE IF NOT EXISTS motos(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +16,6 @@ def init_db():
                 origem TEXT, preco_aquisicao REAL, preco_venda REAL,
                 vendido INTEGER DEFAULT 0
             )""")
-        # custos por moto
         c.execute("""
             CREATE TABLE IF NOT EXISTS moto_custos(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +23,6 @@ def init_db():
                 descricao TEXT, valor REAL,
                 FOREIGN KEY(moto_id) REFERENCES motos(id) ON DELETE CASCADE
             )""")
-        # leads
         c.execute("""
             CREATE TABLE IF NOT EXISTS leads(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +30,6 @@ def init_db():
                 produto_id INTEGER, temperatura TEXT, observacoes TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )""")
-        # vendas
         c.execute("""
             CREATE TABLE IF NOT EXISTS vendas(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +38,6 @@ def init_db():
                 produto_id INTEGER, data_venda TEXT, lead_id INTEGER,
                 condicao_pagamento TEXT
             )""")
-        # custos por venda
         c.execute("""
             CREATE TABLE IF NOT EXISTS venda_custos(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,9 +45,14 @@ def init_db():
                 descricao TEXT, valor REAL,
                 FOREIGN KEY(venda_id) REFERENCES vendas(id) ON DELETE CASCADE
             )""")
-        # financeiro: custos gerais
         c.execute("""
             CREATE TABLE IF NOT EXISTS financeiro_custos(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ano INTEGER, mes INTEGER,
+                descricao TEXT, valor REAL
+            )""")
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS financeiro_despesas(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ano INTEGER, mes INTEGER,
                 descricao TEXT, valor REAL
@@ -90,7 +90,7 @@ def _motos_dropdown():
         FROM motos WHERE vendido=0 ORDER BY modelo
     """)
 
-# ──────────── ROTA: FINANCEIRO ────────────
+# ──────────── FINANCEIRO ────────────
 def financeiro_periodos():
     anos_v = [int(r[0]) for r in query(
         "SELECT DISTINCT strftime('%Y',data_venda) FROM vendas")]
@@ -119,13 +119,11 @@ def financeiro_dados(ano, mes):
     """, (ini, fim))
 
     total_vendas = sum(v["preco_venda"] for v in vendas)
-    # soma custo aquisição + custos de venda
     custo_total  = sum(custo_total_venda(v) for v in vendas)
     lucro_bruto  = total_vendas - custo_total
 
     custos_mens  = sum(r["valor"] for r in query(
         "SELECT valor FROM financeiro_custos WHERE ano=? AND mes=?", (ano, mes)))
-    # comissão de 10% sobre lucro bruto, mínimo R$100 por venda
     comissao = 0
     for v in vendas:
         lucro = (v["preco_venda"] - custo_total_venda(v))
@@ -171,12 +169,12 @@ def financeiro_gravar_custos():
                     (ano, mes, desc, float(val)))
     return redirect(url_for("financeiro"))
 
-# ──────────── ROTA: HOME ────────────
+# ──────────── HOME ────────────
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# ──────────── ROTA: ESTOQUE ────────────
+# ──────────── ESTOQUE ────────────
 @app.route("/estoque")
 def estoque():
     motos = query("SELECT * FROM motos WHERE vendido=0 ORDER BY id DESC")
@@ -193,16 +191,11 @@ def estoque():
 
 @app.route("/estoque/origem/<origem>")
 def estoque_por_origem(origem):
-    origem_map = {
-        "consignadas": "Consignada",
-        "proprias":    "Propria",
-        "fornecedor":  "Fornecedor"
-    }
+    origem_map = {"consignadas":"Consignada","proprias":"Propria","fornecedor":"Fornecedor"}
     o = origem_map.get(origem.lower())
     if not o:
         return redirect(url_for("estoque"))
-    motos = query(
-        "SELECT * FROM motos WHERE vendido=0 AND origem=? ORDER BY id DESC", (o,))
+    motos = query("SELECT * FROM motos WHERE vendido=0 AND origem=? ORDER BY id DESC", (o,))
     return render_template("estoque_origem.html", motos=motos, titulo=o)
 
 @app.route("/estoque/novo", methods=["GET","POST"])
@@ -241,8 +234,7 @@ def estoque_form(i=None):
         for desc, val in zip(request.form.getlist("custo_desc"),
                              request.form.getlist("custo_valor")):
             if val:
-                execute("""INSERT INTO moto_custos
-                           (moto_id,descricao,valor) VALUES(?,?,?)""",
+                execute("INSERT INTO moto_custos(moto_id,descricao,valor) VALUES(?,?,?)",
                         (moto_id, desc, float(val)))
         return redirect(url_for("estoque"))
     return render_template("estoque_form.html",
@@ -253,20 +245,14 @@ def estoque_excluir(i):
     execute("DELETE FROM motos WHERE id=?", (i,))
     return redirect(url_for("estoque"))
 
-# ──────────── ROTA: LEADS ────────────
+# ──────────── LEADS ────────────
 @app.route("/vendas/leads")
 def leads():
     lista = query("""
-        SELECT l.id,
-               l.created_at,
-               l.nome,
-               l.telefone,
-               l.cpf,
-               l.data_nasc,
-               l.temperatura,
-               m.modelo
+        SELECT l.id,l.created_at,l.nome,l.telefone,l.cpf,l.data_nasc,
+               l.temperatura,m.modelo
         FROM leads l
-        LEFT JOIN motos m ON m.id = l.produto_id
+        LEFT JOIN motos m ON m.id=l.produto_id
         ORDER BY l.created_at DESC
     """)
     return render_template("leads.html", leads=lista)
@@ -286,9 +272,8 @@ def leads_form(i=None):
                                    motos=motos_dd, erro="Nome obrigatório.")
         if edit:
             execute("""UPDATE leads SET
-                         nome=:nome,telefone=:telefone,cpf=:cpf,
-                         data_nasc=:data_nasc,produto_id=:produto_id,
-                         temperatura=:temperatura,
+                         nome=:nome,telefone=:telefone,cpf=:cpf,data_nasc=:data_nasc,
+                         produto_id=:produto_id,temperatura=:temperatura,
                          observacoes=:observacoes
                        WHERE id=:id""", {**d, "id": i})
         else:
@@ -309,7 +294,7 @@ def leads_excluir(i):
     execute("DELETE FROM leads WHERE id=?", (i,))
     return redirect(url_for("leads"))
 
-# ──────────── ROTA: VENDAS ────────────
+# ──────────── VENDAS ────────────
 @app.route("/vendas")
 def vendas_home():
     lista = query("""
@@ -323,7 +308,7 @@ def vendas_home():
 @app.route("/vendas/novo", methods=["GET","POST"])
 def vendas_novo():
     if request.method == "POST":
-        return _salvar_venda(editar=False)
+        return _salvar_venda(False)
     return render_template("vendas_form.html",
                            edit=False, venda=None,
                            lead=None, motos=_motos_dropdown(), cv=[])
@@ -332,11 +317,10 @@ def vendas_novo():
 def vendas_editar(vid):
     venda = query("SELECT * FROM vendas WHERE id=?", (vid,), one=True)
     if not venda:
-        return redirect( url_for("vendas_home") )
+        return redirect(url_for("vendas_home"))
     if request.method == "POST":
-        return _salvar_venda(editar=True, venda_id=vid, venda_original=venda)
-    custos_v = query(
-        "SELECT * FROM venda_custos WHERE venda_id=?", (vid,))
+        return _salvar_venda(True, venda_id=vid, venda_original=venda)
+    custos_v = query("SELECT * FROM venda_custos WHERE venda_id=?", (vid,))
     return render_template("vendas_form.html",
                            edit=True, venda=venda,
                            lead=None, motos=_motos_dropdown(), cv=custos_v)
@@ -345,7 +329,7 @@ def vendas_editar(vid):
 def gerar_venda(lid):
     lead = query("SELECT * FROM leads WHERE id=?", (lid,), one=True)
     if request.method == "POST":
-        return _salvar_venda(editar=False, lead_id=lid)
+        return _salvar_venda(False, lead_id=lid)
     return render_template("vendas_form.html",
                            edit=False, venda=None,
                            lead=lead, motos=_motos_dropdown(), cv=[])
@@ -379,15 +363,14 @@ def _salvar_venda(editar, venda_id=None, lead_id=None, venda_original=None):
                          :data_venda,:lead_id,:condicao_pagamento
                        )""", d)
             venda_id = cur.lastrowid
-            c.execute("UPDATE motos SET vendido=1 WHERE id=?",
-                      (d["produto_id"],))
+            c.execute("UPDATE motos SET vendido=1 WHERE id=?", (d["produto_id"],))
 
     execute("DELETE FROM venda_custos WHERE venda_id=?", (venda_id,))
     for desc, val in zip(request.form.getlist("cv_desc"),
                          request.form.getlist("cv_valor")):
         if val:
-            execute("""INSERT INTO venda_custos(venda_id,descricao,valor)
-                       VALUES(?,?,?)""", (venda_id, desc, float(val)))
+            execute("INSERT INTO venda_custos(venda_id,descricao,valor) VALUES(?,?,?)",
+                    (venda_id, desc, float(val)))
     return redirect(url_for("vendas_home"))
 
 @app.route("/vendas/excluir/<int:vid>", methods=["POST"])
@@ -397,7 +380,7 @@ def vendas_excluir(vid):
     execute("DELETE FROM vendas WHERE id=?", (vid,))
     return redirect(url_for("vendas_home"))
 
-# ──────────── ROTA: CUSTOS POR VENDA ────────────
+# ──────────── CUSTOS POR VENDA ────────────
 @app.route("/vendas/<int:vid>/custos", methods=["GET","POST"])
 def venda_custos(vid):
     venda = query("SELECT * FROM vendas WHERE id=?", (vid,), one=True)
@@ -413,7 +396,12 @@ def venda_custos(vid):
     custos = query("SELECT * FROM venda_custos WHERE venda_id=?", (vid,))
     return render_template("venda_custos.html", venda=venda, custos=custos)
 
-# ──────────── ROTA: DOCUMENTOS ────────────
+@app.route("/vendas/<int:vid>/custos/excluir/<int:cid>", methods=["POST"])
+def venda_custos_excluir(vid, cid):
+    execute("DELETE FROM venda_custos WHERE id=?", (cid,))
+    return redirect(url_for("venda_custos", vid=vid))
+
+# ──────────── DOCUMENTOS ────────────
 @app.route("/vendas/<int:i>/proposta")
 def venda_proposta(i):
     v = query("SELECT * FROM vendas WHERE id=?", (i,), one=True)
@@ -426,6 +414,7 @@ def venda_termo(i):
     m = query("SELECT * FROM motos WHERE id=?", (v["produto_id"],), one=True)
     return render_template("termo.html", v=v, m=m)
 
+# ──────────── MAIN ────────────
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
